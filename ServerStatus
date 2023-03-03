@@ -1,0 +1,42 @@
+import psutil
+import time
+import smtplib
+
+# Server configuration
+SERVER_NAME = "your_server_name"
+SERVER_EMAIL = "your_email_address"
+SERVER_PASSWORD = "your_email_password"
+ALERT_EMAIL = "alert_email_address"
+ALERT_THRESHOLD = 5  # minutes
+
+# Function to send email alerts
+def send_email(subject, message):
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(SERVER_EMAIL, SERVER_PASSWORD)
+        msg = f"Subject: {subject}\n\n{message}"
+        server.sendmail(SERVER_EMAIL, ALERT_EMAIL, msg)
+        print("Email sent")
+    except Exception as e:
+        print(f"Email failed to send: {str(e)}")
+    finally:
+        server.quit()
+
+# Main monitoring loop
+last_alert_time = 0
+while True:
+    # Check server uptime, CPU usage, and memory usage
+    uptime = time.time() - psutil.boot_time()
+    cpu_percent = psutil.cpu_percent()
+    memory_percent = psutil.virtual_memory().percent
+
+    # Print server status
+    print(f"Uptime: {uptime:.2f} seconds, CPU: {cpu_percent}%, Memory: {memory_percent}%")
+
+    # Send alert if server is down
+    if uptime < 60 and time.time() - last_alert_time > ALERT_THRESHOLD * 60:
+        send_email(f"{SERVER_NAME} is down", f"{SERVER_NAME} is down! Uptime: {uptime:.2f} seconds")
+        last_alert_time = time.time()
+
+    time.sleep(60)  # Wait for 1 minute before checking again
